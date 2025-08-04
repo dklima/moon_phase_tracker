@@ -44,7 +44,7 @@ module MoonPhaseTracker
         symbol: symbol,
         interpolated: @interpolated
       }
-      
+
       Formatter.build_hash_representation(phase_attributes)
     end
 
