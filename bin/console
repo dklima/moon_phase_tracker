@@ -1,8 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require "bundler/setup"
-require "moon_phase_tracker"
+require 'bundler/setup'
+require 'moon_phase_tracker'
 
 # Usage examples available in the console:
 #
@@ -14,8 +14,8 @@ require "moon_phase_tracker"
 # tracker.current_month_phases
 # tracker.next_phase
 
-puts "🌙 MoonPhaseTracker console loaded!"
-puts "Use the methods above to explore moon phases."
+puts '🌙 MoonPhaseTracker console loaded!'
+puts 'Use the methods above to explore moon phases.'
 
-require "irb"
+require 'irb'
 IRB.start(__FILE__)

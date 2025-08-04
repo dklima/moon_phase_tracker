@@ -1,23 +1,23 @@
 # frozen_string_literal: true
 
-require_relative "lib/moon_phase_tracker/version"
+require_relative 'lib/moon_phase_tracker/version'
 
 Gem::Specification.new do |spec|
-  spec.name = "moon_phase_tracker"
+  spec.name = 'moon_phase_tracker'
   spec.version = MoonPhaseTracker::VERSION
-  spec.authors = ["Daniel K Lima"]
-  spec.email = ["dklima@gmail.com"]
+  spec.authors = ['Daniel K Lima']
+  spec.email = ['dklima@gmail.com']
 
-  spec.summary = "Moon phase tracker using USNO Navy API"
-  spec.description = "A Ruby gem to track moon phases using the US Naval Observatory API. Shows moon phases for specific dates, months, or years for lunar calendar scheduling."
-  spec.homepage = "https://github.com/dklima/moon_phase_tracker"
-  spec.license = "MIT"
-  spec.required_ruby_version = ">= 3.2.0"
+  spec.summary = 'Moon phase tracker using USNO Navy API'
+  spec.description = 'A Ruby gem to track moon phases using the US Naval Observatory API. Shows moon phases for specific dates, months, or years for lunar calendar scheduling.'
+  spec.homepage = 'https://github.com/dklima/moon_phase_tracker'
+  spec.license = 'MIT'
+  spec.required_ruby_version = '>= 3.2.0'
 
-  spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
-  spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "TODO: Put your gem's public repo URL here."
-    spec.metadata["changelog_uri"] = "TODO: Put your gem's CHANGELOG.md URL here."
+  spec.metadata['allowed_push_host'] = "TODO: Set to your gem server 'https://example.com'"
+  spec.metadata['homepage_uri'] = spec.homepage
+  spec.metadata['source_code_uri'] = "TODO: Put your gem's public repo URL here."
+  spec.metadata['changelog_uri'] = "TODO: Put your gem's CHANGELOG.md URL here."
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
@@ -28,13 +28,13 @@ Gem::Specification.new do |spec|
         f.start_with?(*%w[bin/ Gemfile .gitignore .rspec spec/ .github/])
     end
   end
-  spec.bindir = "exe"
+  spec.bindir = 'exe'
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
-  spec.require_paths = ["lib"]
+  spec.require_paths = ['lib']
 
   # Dependencies for HTTP requests and JSON parsing
-  spec.add_dependency "net-http", "~> 0.4"
-  spec.add_dependency "json", "~> 2.7"
+  spec.add_dependency 'json', '~> 2.7'
+  spec.add_dependency 'net-http', '~> 0.4'
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

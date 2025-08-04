@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    moon_phase_tracker (1.1.0)
+    moon_phase_tracker (1.2.0)
       json (~> 2.7)
       net-http (~> 0.4)
 
