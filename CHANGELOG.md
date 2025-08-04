@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2025-08-04
+
+### Changed
+- **Phase Class Refactoring**
+  - Refactored `Phase` class following SOLID principles  
+  - Extracted specialized components: `Parser`, `Formatter`, `Comparator`, `Mapper`
+  - Applied Single Responsibility Principle with dedicated phase/ namespace
+  - Improved error handling with graceful degradation
+  - Enhanced code maintainability while preserving 100% API compatibility
+  - All 53 tests continue to pass with identical functionality
+
 ## [1.3.1] - 2025-08-04
 
 ### Changed
