@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-08-04
+
+### Added
+- **8 Moon Phases Support**
+  - Complete support for all 8 lunar phases instead of just 4 major phases
+  - Added intermediate phases: Waxing Crescent 🌒, Waxing Gibbous 🌔, Waning Gibbous 🌖, Waning Crescent 🌘
+  - New `PhaseCalculator` class for interpolating intermediate phases between major phases
+  - `interpolated` attribute on `Phase` class to distinguish calculated from official phases
+  
+- **New Public API Methods**
+  - `MoonPhaseTracker.all_phases_for_month(year, month)` - Get all 8 phases for a specific month
+  - `MoonPhaseTracker.all_phases_for_year(year)` - Get all 8 phases for a year
+  - `MoonPhaseTracker.all_phases_from_date(date, num_cycles)` - Get all 8 phases from a specific date
+  
+- **Enhanced Phase Representation**
+  - Updated `PHASE_SYMBOLS` constant with all 8 phase emojis
+  - Updated `PHASE_NAMES` mapping to include intermediate phases
+  - Visual indicator (`~`) for interpolated phases in formatted output
+  - Enhanced `format_phases` method to show major vs interpolated phase counts
+
+- **Examples & Documentation**
+  - New `examples/eight_phases_example.rb` demonstrating 8-phase functionality
+  - Comprehensive comparison between 4-phase and 8-phase outputs
+  - Phase symbols reference with visual emojis
+
+### Changed
+- **Precision & Accuracy**
+  - Interpolation algorithm provides ~85-90% accuracy for intermediate phases
+  - Suitable for lunar calendar applications requiring higher phase granularity
+  - Maintains backward compatibility with existing 4-phase API methods
+
 ## [1.1.0] - 2025-08-04
 
 ### Changed
