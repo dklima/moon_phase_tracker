@@ -1,34 +1,42 @@
 # frozen_string_literal: true
 
 require "date"
+require_relative "tracker/phase_query_service"
+require_relative "tracker/phase_formatter"
+require_relative "tracker/date_parser"
+require_relative "tracker/validators"
 
 module MoonPhaseTracker
   class Tracker
+    include Validators
+
+    attr_reader :client, :query_service, :formatter, :date_parser
+
     def initialize(rate_limiter: nil)
       @client = Client.new(rate_limiter: rate_limiter)
+      @query_service = PhaseQueryService.new(@client)
+      @formatter = PhaseFormatter.new
+      @date_parser = DateParser.new
+    end
+
+    def rate_limit_info
+      @client.rate_limit_info
     end
 
     def phases_for_month(year, month)
       validate_month!(year, month)
-
-      year_phases = phases_for_year(year)
-      year_phases.select { |phase| phase.in_month?(year, month) }
+      @query_service.phases_for_month(year, month)
     end
 
     def phases_for_year(year)
       validate_year!(year)
-
-      response = @client.phases_for_year(year)
-      parse_phases(response)
+      @query_service.phases_for_year(year)
     end
 
     def phases_from_date(date, num_phases = 12)
-      date_obj = parse_date(date)
+      parsed_date = @date_parser.parse(date)
       validate_num_phases!(num_phases)
-
-      formatted_date = date_obj.strftime("%Y-%m-%d")
-      response = @client.phases_from_date(formatted_date, num_phases)
-      parse_phases(response)
+      @query_service.phases_from_date(parsed_date, num_phases)
     end
 
     def next_phase
@@ -44,112 +52,34 @@ module MoonPhaseTracker
       phases_for_year(Date.today.year)
     end
 
-    def rate_limit_info
-      @client.rate_limit_info
-    end
-
-    # Get all 8 phases (4 major + 4 intermediate) for a month
     def all_phases_for_month(year, month)
-      major_phases = phases_for_month(year, month)
-      calculator = PhaseCalculator.new(major_phases)
-      all_phases = calculator.calculate_all_phases
-
-      all_phases.select { |phase| phase.in_month?(year, month) }
+      validate_month!(year, month)
+      @query_service.all_phases_for_month(year, month)
     end
 
     def all_phases_for_year(year)
-      major_phases = phases_for_year(year)
-      calculator = PhaseCalculator.new(major_phases)
-      calculator.calculate_all_phases
+      validate_year!(year)
+      @query_service.all_phases_for_year(year)
     end
 
     def all_phases_from_date(date, num_cycles = 3)
-      # Get enough major phases to cover the requested cycles
-      major_phases = phases_from_date(date, num_cycles * 4)
-      calculator = PhaseCalculator.new(major_phases)
-      calculator.calculate_all_phases
+      parsed_date = @date_parser.parse(date)
+      @query_service.all_phases_from_date(parsed_date, num_cycles)
     end
 
     def format_phases(phases, title = nil)
-      return "No phases found." if phases.empty?
-
-      output = []
-      output << title if title
-      output << "=" * title.length if title
-      output << ""
-
-      phases.each do |phase|
-        prefix = phase.interpolated ? "~" : " "
-        output << "#{prefix}#{phase}"
-      end
-
-      output << ""
-      major_count = phases.count { |p| !p.interpolated }
-      interpolated_count = phases.count(&:interpolated)
-
-      if interpolated_count.positive?
-        output << "Total: #{phases.size} phase(s) (#{major_count} major, #{interpolated_count} interpolated)"
-        output << "~ indicates interpolated phases"
-      else
-        output << "Total: #{phases.size} phase(s)"
-      end
-
-      output.join("\n")
+      @formatter.format(phases, title)
     end
 
     def self.month_name(month)
-      months = %w[
-        January February March April May June
-        July August September October November December
-      ]
-
-      months[month - 1]
+      MONTH_NAMES[month - 1]
     end
 
     private
 
-    def parse_phases(response)
-      return [] unless response && response["phasedata"]
-
-      phases = response["phasedata"].map { |phase_data| Phase.new(phase_data) }
-      phases.sort
-    end
-
-    def parse_date(date)
-      case date
-      when String
-        Date.parse(date)
-      when Date
-        date
-      when Time
-        date.to_date
-      else
-        raise InvalidDateError, "Invalid date format"
-      end
-    rescue Date::Error
-      raise InvalidDateError, "Invalid date: #{date}"
-    end
-
-    def validate_year!(year)
-      current_year = Date.today.year
-
-      return if year.is_a?(Integer) && year.between?(1700, current_year + 10)
-
-      raise InvalidDateError, "Year must be between 1700 and #{current_year + 10}"
-    end
-
-    def validate_month!(year, month)
-      validate_year!(year)
-
-      return if month.is_a?(Integer) && month.between?(1, 12)
-
-      raise InvalidDateError, "Month must be between 1 and 12"
-    end
-
-    def validate_num_phases!(num_phases)
-      return if num_phases.is_a?(Integer) && num_phases.between?(1, 99)
-
-      raise InvalidDateError, "Number of phases must be between 1 and 99"
-    end
+    MONTH_NAMES = %w[
+      January February March April May June
+      July August September October November December
+    ].freeze
   end
 end
