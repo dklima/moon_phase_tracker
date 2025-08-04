@@ -136,15 +136,15 @@ jobs:
           files: '*.gem'
           generate_release_notes: true
           body: |
-            ## 🚀 Release Summary
+            ## Release Summary
             
             This release has been automatically published after passing all quality gates:
             
-            - ✅ **Security**: Brakeman security analysis passed
-            - ✅ **Code Style**: RuboCop linting passed  
-            - ✅ **Tests**: RSpec test suite passed on Ruby 3.4.4, 3.3.6, 3.2.6
-            - ✅ **Build**: Gem built successfully
-            - ✅ **Published**: Available on [RubyGems.org](https://rubygems.org/gems/moon_phase_tracker)
+            - **Security**: Brakeman security analysis passed
+            - **Code Style**: RuboCop linting passed
+            - **Tests**: RSpec test suite passed on Ruby 3.4.4, 3.3.6, 3.2.6
+            - **Build**: Gem built successfully
+            - **Published**: Available on [RubyGems.org](https://rubygems.org/gems/moon_phase_tracker)
             
             Install with: `gem install moon_phase_tracker`
         env:
