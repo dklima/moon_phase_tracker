@@ -3,8 +3,6 @@
 require "thread"
 
 module MoonPhaseTracker
-  # Rate limiter implementation using token bucket algorithm
-  # Provides configurable rate limiting for API requests
   class RateLimiter
     DEFAULT_REQUESTS_PER_SECOND = 1.0
     DEFAULT_BURST_SIZE = 1
@@ -17,11 +15,10 @@ module MoonPhaseTracker
       @mutex = Mutex.new
     end
 
-    # Wait if necessary and then allow the request to proceed
     def throttle
       @mutex.synchronize do
         refill_tokens
-        
+
         if @tokens >= 1.0
           consume_token
           return
@@ -54,7 +51,7 @@ module MoonPhaseTracker
 
     def parse_rate_limit(rate)
       rate = rate || ENV.fetch("MOON_PHASE_RATE_LIMIT", DEFAULT_REQUESTS_PER_SECOND)
-      
+
       case rate
       when String
         Float(rate)
@@ -67,7 +64,7 @@ module MoonPhaseTracker
 
     def parse_burst_size(size)
       size = size || ENV.fetch("MOON_PHASE_BURST_SIZE", DEFAULT_BURST_SIZE)
-      
+
       case size
       when String
         Integer(size)
@@ -83,7 +80,7 @@ module MoonPhaseTracker
       elapsed = now - @last_refill
       tokens_to_add = elapsed * @requests_per_second
 
-      @tokens = [@tokens + tokens_to_add, @burst_size].min
+      @tokens = [ @tokens + tokens_to_add, @burst_size ].min
       @last_refill = now
     end
 
@@ -95,7 +92,7 @@ module MoonPhaseTracker
     end
 
     def consume_token
-      @tokens = [@tokens - 1.0, 0.0].max
+      @tokens = [ @tokens - 1.0, 0.0 ].max
     end
 
     def current_time

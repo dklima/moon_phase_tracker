@@ -160,6 +160,4 @@ RSpec.describe MoonPhaseTracker::Client, "rate limiting integration" do
       expect(elapsed).to be >= 0.4 # Rate limiting should apply across methods
     end
   end
-
-
 end
