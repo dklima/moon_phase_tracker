@@ -8,9 +8,9 @@ Gem::Specification.new do |spec|
   spec.authors = ["Daniel K Lima"]
   spec.email = ["dklima@gmail.com"]
 
-  spec.summary = "TODO: Write a short summary, because RubyGems requires one."
-  spec.description = "TODO: Write a longer description or delete this line."
-  spec.homepage = "TODO: Put your gem's website or public repo URL here."
+  spec.summary = "Moon phase tracker using USNO Navy API"
+  spec.description = "A Ruby gem to track moon phases using the US Naval Observatory API. Shows moon phases for specific dates, months, or years for lunar calendar scheduling."
+  spec.homepage = "https://github.com/dklima/moon_phase_tracker"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.2.0"
 
@@ -32,8 +32,9 @@ Gem::Specification.new do |spec|
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 
-  # Uncomment to register a new dependency of your gem
-  # spec.add_dependency "example-gem", "~> 1.0"
+  # Dependencies for HTTP requests and JSON parsing
+  spec.add_dependency "net-http", "~> 0.4"
+  spec.add_dependency "json", "~> 2.7"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
