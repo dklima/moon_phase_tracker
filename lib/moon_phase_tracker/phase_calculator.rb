@@ -3,15 +3,9 @@
 require "date"
 
 module MoonPhaseTracker
-  # Calculates intermediate moon phases between major phases
   class PhaseCalculator
-    # Average lunar cycle length in days
     LUNAR_CYCLE = 29.530588853
-
-    # Days between major phases (approximately)
     PHASE_INTERVAL = LUNAR_CYCLE / 4.0
-
-    # Intermediate phase names and their position relative to major phases
     INTERMEDIATE_PHASES = [
       { name: "Waxing Crescent", offset_ratio: 0.5, between: %i[new_moon first_quarter] },
       { name: "Waxing Gibbous", offset_ratio: 0.5, between: %i[first_quarter full_moon] },
@@ -23,7 +17,6 @@ module MoonPhaseTracker
       @major_phases = major_phases.sort
     end
 
-    # Calculate all 8 phases (4 major + 4 intermediate)
     def calculate_all_phases
       all_phases = @major_phases.dup
 
@@ -32,7 +25,6 @@ module MoonPhaseTracker
         all_phases << intermediate if intermediate
       end
 
-      # Handle wrap-around: last phase to first phase of next cycle
       if @major_phases.size >= 2
         last_phase = @major_phases.last
         first_phase = find_next_cycle_phase(last_phase)
@@ -53,17 +45,14 @@ module MoonPhaseTracker
       intermediate_config = find_intermediate_config(phase1.phase_type, phase2.phase_type)
       return nil unless intermediate_config
 
-      # Calculate the intermediate date/time
       days_between = (phase2.date - phase1.date).to_f
       hours_between = days_between * 24
 
-      # Add time difference if both phases have times
       if phase1.time && phase2.time
         time_diff = (phase2.time - phase1.time) / 3600.0 # Convert to hours
         hours_between += time_diff
       end
 
-      # Calculate intermediate point
       intermediate_hours = hours_between * intermediate_config[:offset_ratio]
       intermediate_datetime = if phase1.time
                                 phase1.time + (intermediate_hours * 3600)
@@ -72,7 +61,6 @@ module MoonPhaseTracker
                                          "+00:00") + (intermediate_hours * 3600)
       end
 
-      # Create phase data structure
       phase_data = {
         "phase" => intermediate_config[:name],
         "year" => intermediate_datetime.year,
@@ -83,7 +71,6 @@ module MoonPhaseTracker
 
       Phase.new(phase_data, interpolated: true)
     rescue StandardError
-      # If calculation fails, return nil to skip this intermediate phase
       nil
     end
 
@@ -91,7 +78,6 @@ module MoonPhaseTracker
       return false unless phase1 && phase2
       return false unless phase1.date && phase2.date
 
-      # Don't interpolate if phases are too far apart (likely different cycles)
       days_between = (phase2.date - phase1.date).to_f
       days_between.positive? && days_between <= (PHASE_INTERVAL * 1.5)
     end

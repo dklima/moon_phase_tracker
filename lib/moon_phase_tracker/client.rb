@@ -3,14 +3,16 @@
 require "net/http"
 require "json"
 require "uri"
+require_relative "rate_limiter"
 
 module MoonPhaseTracker
   class Client
     BASE_URL = "https://aa.usno.navy.mil/api/moon/phases"
     TIMEOUT = 10
 
-    def initialize
+    def initialize(rate_limiter: nil)
       @uri_cache = {}
+      @rate_limiter = rate_limiter || create_default_rate_limiter
     end
 
     def phases_from_date(date, num_phases = 12)
@@ -28,10 +30,22 @@ module MoonPhaseTracker
       make_request("#{BASE_URL}/year", params)
     end
 
+    def rate_limit_info
+      @rate_limiter&.configuration
+    end
+
     private
+
+    def create_default_rate_limiter
+      return nil if ENV["MOON_PHASE_RATE_LIMIT"] == "0" || ENV["MOON_PHASE_RATE_LIMIT"] == "false"
+
+      RateLimiter.new
+    end
 
     def make_request(endpoint, params = {})
       uri = build_uri(endpoint, params)
+
+      @rate_limiter&.throttle
 
       begin
         response = fetch_with_timeout(uri)

@@ -4,8 +4,8 @@ require "date"
 
 module MoonPhaseTracker
   class Tracker
-    def initialize
-      @client = Client.new
+    def initialize(rate_limiter: nil)
+      @client = Client.new(rate_limiter: rate_limiter)
     end
 
     def phases_for_month(year, month)
@@ -44,24 +44,25 @@ module MoonPhaseTracker
       phases_for_year(Date.today.year)
     end
 
+    def rate_limit_info
+      @client.rate_limit_info
+    end
+
     # Get all 8 phases (4 major + 4 intermediate) for a month
     def all_phases_for_month(year, month)
       major_phases = phases_for_month(year, month)
       calculator = PhaseCalculator.new(major_phases)
       all_phases = calculator.calculate_all_phases
 
-      # Filter to only phases in the requested month
       all_phases.select { |phase| phase.in_month?(year, month) }
     end
 
-    # Get all 8 phases (4 major + 4 intermediate) for a year
     def all_phases_for_year(year)
       major_phases = phases_for_year(year)
       calculator = PhaseCalculator.new(major_phases)
       calculator.calculate_all_phases
     end
 
-    # Get all 8 phases from a specific date
     def all_phases_from_date(date, num_cycles = 3)
       # Get enough major phases to cover the requested cycles
       major_phases = phases_from_date(date, num_cycles * 4)

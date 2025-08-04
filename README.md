@@ -15,6 +15,7 @@ A Ruby gem for tracking moon phases using the official US Naval Observatory (USN
 - 🌗 Visual indicators for calculated vs official phases
 - 🌘 Automatic caching to optimize requests
 - ⚡ Robust error handling
+- 🚦 Configurable rate limiting to respect API limits
 
 ## Installation
 
@@ -190,6 +191,97 @@ This gem uses the official US Naval Observatory (USNO) API:
 - **Documentation**: https://aa.usno.navy.mil/data/api
 
 All times are provided in Universal Time (UTC).
+
+## Rate Limiting
+
+The gem implements respectful rate limiting to avoid overwhelming the USNO Navy API. By default, it allows **1 request per second** with a burst size of 1.
+
+### Default Rate Limiting
+
+```ruby
+# Default: 1 request per second
+tracker = MoonPhaseTracker::Tracker.new
+
+# Check current rate limit configuration
+puts tracker.rate_limit_info
+# => {:requests_per_second=>1.0, :burst_size=>1, :available_tokens=>1}
+
+# Multiple requests will be automatically rate limited
+start = Time.now
+tracker.phases_for_year(2025)  # Immediate
+tracker.phases_for_year(2024)  # Waits ~1 second
+puts "Total time: #{Time.now - start}s"  # ~1.0 seconds
+```
+
+### Custom Rate Limiting
+
+```ruby
+# Create custom rate limiter: 3 requests per second, burst of 2
+rate_limiter = MoonPhaseTracker::RateLimiter.new(
+  requests_per_second: 3.0,
+  burst_size: 2
+)
+
+tracker = MoonPhaseTracker::Tracker.new(rate_limiter: rate_limiter)
+
+# Burst requests are immediate, then rate limited
+tracker.phases_for_year(2025)  # Immediate
+tracker.phases_for_year(2024)  # Immediate (burst)
+tracker.phases_for_year(2023)  # Waits ~0.33 seconds
+```
+
+### Environment Variable Configuration
+
+```ruby
+# Set via environment variables
+ENV["MOON_PHASE_RATE_LIMIT"] = "2.5"
+ENV["MOON_PHASE_BURST_SIZE"] = "3"
+
+tracker = MoonPhaseTracker::Tracker.new
+puts tracker.rate_limit_info
+# => {:requests_per_second=>2.5, :burst_size=>3, :available_tokens=>3}
+```
+
+### Disabling Rate Limiting
+
+```ruby
+# Disable rate limiting completely
+ENV["MOON_PHASE_RATE_LIMIT"] = "0"
+
+tracker = MoonPhaseTracker::Tracker.new
+puts tracker.rate_limit_info  # => nil
+
+# Or pass nil explicitly
+tracker = MoonPhaseTracker::Tracker.new(rate_limiter: nil)
+```
+
+### Rate Limit Monitoring
+
+```ruby
+rate_limiter = MoonPhaseTracker::RateLimiter.new(
+  requests_per_second: 1.0,
+  burst_size: 2
+)
+
+# Check if request can proceed without waiting
+puts rate_limiter.can_proceed?  # => true
+
+# Check current token status
+puts rate_limiter.configuration
+# => {:requests_per_second=>1.0, :burst_size=>2, :available_tokens=>2}
+
+# Manual rate limiting control
+rate_limiter.throttle  # Waits if necessary and consumes token
+```
+
+### Token Bucket Algorithm
+
+The rate limiter uses a token bucket algorithm:
+
+- **Tokens**: Represent available requests
+- **Bucket Size**: Maximum burst requests allowed
+- **Refill Rate**: How quickly tokens are replenished
+- **Thread Safe**: Handles concurrent requests safely
 
 ## Development
 

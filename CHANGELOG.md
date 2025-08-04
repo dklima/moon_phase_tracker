@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2025-08-04
+
+### Added
+- **Rate Limiting Support**
+  - Implemented configurable rate limiting using token bucket algorithm
+  - Default rate limit: 1 request per second with burst size of 1
+  - New `RateLimiter` class with thread-safe token bucket implementation
+  - Environment variable configuration: `MOON_PHASE_RATE_LIMIT` and `MOON_PHASE_BURST_SIZE`
+  - Rate limiting can be disabled by setting `MOON_PHASE_RATE_LIMIT=0`
+  - Added `rate_limit_info` method to inspect current rate limiting configuration
+  - Custom rate limiter can be passed to `Tracker.new(rate_limiter: custom_limiter)`
+
+### Changed
+- **Client API Updates**
+  - `Client.new` now accepts optional `rate_limiter` parameter
+  - `Tracker.new` now accepts optional `rate_limiter` parameter
+  - All API requests are now automatically rate limited by default
+
+### Technical
+- Added comprehensive test coverage for rate limiting functionality
+- Added `examples/rate_limiting_example.rb` demonstrating all rate limiting features
+- Updated documentation with rate limiting configuration and usage examples
+
 ## [1.2.0] - 2025-08-04
 
 ### Added
