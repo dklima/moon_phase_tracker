@@ -27,6 +27,8 @@ GEM
     base64 (0.3.0)
     benchmark (0.4.1)
     bigdecimal (3.2.2)
+    brakeman (6.2.2)
+      racc
     concurrent-ruby (1.3.5)
     connection_pool (2.5.3)
     crack (1.0.0)
@@ -135,6 +137,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  brakeman (~> 6.0)
   irb
   moon_phase_tracker!
   rake (~> 13.0)

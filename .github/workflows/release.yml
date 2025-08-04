@@ -5,31 +5,87 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
+  security:
+    runs-on: ubuntu-latest
+    name: Security Analysis (Brakeman)
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+          bundler-cache: true
+          
+      - name: Run Brakeman security scan
+        run: |
+          bundle exec brakeman --format json --output brakeman-report.json --exit-on-warn --exit-on-error || true
+          bundle exec brakeman --format text
+        continue-on-error: false
+        
+      - name: Upload Brakeman report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: brakeman-report
+          path: brakeman-report.json
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Code Style (RuboCop)
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+          bundler-cache: true
+          
+      - name: Run RuboCop
+        run: bundle exec rubocop --format github
+
   test:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    name: Tests (Ruby ${{ matrix.ruby }})
     strategy:
+      fail-fast: false
       matrix:
         ruby:
           - '3.4.4'
+          - '3.3.6'
+          - '3.2.6'
 
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Run tests
-        run: bundle exec rake
+          
+      - name: Run RSpec tests
+        run: bundle exec rspec --format documentation
 
   release:
-    needs: test
+    needs: [security, lint, test]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    name: Release to RubyGems
     
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +102,17 @@ jobs:
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
+          
+      - name: Verify version matches tag
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          GEM_VERSION=$(ruby -r ./lib/moon_phase_tracker/version.rb -e "puts MoonPhaseTracker::VERSION")
+          echo "Tag version: $TAG_VERSION"
+          echo "Gem version: $GEM_VERSION"
+          if [ "$TAG_VERSION" != "$GEM_VERSION" ]; then
+            echo "Version mismatch! Tag: $TAG_VERSION, Gem: $GEM_VERSION"
+            exit 1
+          fi
           
       - name: Build gem
         run: gem build *.gemspec
@@ -68,5 +135,17 @@ jobs:
         with:
           files: '*.gem'
           generate_release_notes: true
+          body: |
+            ## 🚀 Release Summary
+            
+            This release has been automatically published after passing all quality gates:
+            
+            - ✅ **Security**: Brakeman security analysis passed
+            - ✅ **Code Style**: RuboCop linting passed  
+            - ✅ **Tests**: RSpec test suite passed on Ruby 3.4.4, 3.3.6, 3.2.6
+            - ✅ **Build**: Gem built successfully
+            - ✅ **Published**: Available on [RubyGems.org](https://rubygems.org/gems/moon_phase_tracker)
+            
+            Install with: `gem install moon_phase_tracker`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

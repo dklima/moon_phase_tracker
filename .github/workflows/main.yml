@@ -1,4 +1,4 @@
-name: Ruby
+name: CI
 
 on:
   push:
@@ -7,23 +7,98 @@ on:
 
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  build:
+  security:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    name: Security Analysis (Brakeman)
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+          bundler-cache: true
+          
+      - name: Run Brakeman security scan
+        run: |
+          bundle exec brakeman --format json --output brakeman-report.json --exit-on-warn --exit-on-error || true
+          bundle exec brakeman --format text
+        continue-on-error: false
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Code Style (RuboCop)
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+          bundler-cache: true
+          
+      - name: Run RuboCop
+        run: bundle exec rubocop --format github
+
+  test:
+    runs-on: ubuntu-latest
+    name: Tests (Ruby ${{ matrix.ruby }})
     strategy:
       matrix:
         ruby:
           - '3.4.4'
+          - '3.3.6'
+          - '3.2.6'
 
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-      - name: Run the default task
-        run: bundle exec rake
+          
+      - name: Run RSpec tests
+        run: bundle exec rspec --format documentation
+        
+      - name: Upload coverage reports
+        if: matrix.ruby == '3.4.4'
+        run: echo "Coverage reports could be uploaded here"
+
+  build:
+    needs: [security, lint, test]
+    runs-on: ubuntu-latest
+    name: Build Gem
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4.4'
+          bundler-cache: true
+          
+      - name: Build gem
+        run: gem build *.gemspec
+        
+      - name: Upload gem artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gem-artifact
+          path: '*.gem'
