@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2025-08-04
+
+### Changed
+- **Major Code Refactoring**
+  - Refactored `Tracker` class following SOLID principles
+  - Extracted specialized services: `PhaseQueryService`, `PhaseFormatter`, `DateParser`, `Validators`
+  - Refactored `PhaseCalculator` class with composition over inheritance
+  - Extracted specialized classes: `PhaseInterpolator`, `CycleEstimator`
+  - Applied Single Responsibility Principle across all classes
+  - Implemented early return patterns for better code flow
+  - Improved method naming and code organization
+  - Added comprehensive English comments for maintainability
+
+### Technical
+- **Architecture Improvements**
+  - Converted large classes into smaller, focused service objects
+  - Improved testability and maintainability through better separation of concerns
+  - Enhanced code readability with descriptive method and variable names
+  - Eliminated code duplication and improved DRY principles
+  - Better error handling with specific exception types
+  - Removed generic `rescue StandardError` anti-patterns
+
 ## [1.3.0] - 2025-08-04
 
 ### Added
