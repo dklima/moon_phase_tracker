@@ -11,10 +11,10 @@ module MoonPhaseTracker
 
       def estimate_next_cycle_phase(last_phase)
         return nil unless valid_phase_for_estimation?(last_phase)
-        
+
         estimated_date = calculate_estimated_date(last_phase)
         phase_data = build_estimated_phase_data(estimated_date, last_phase)
-        
+
         Phase.new(phase_data)
       rescue Date::Error, ArgumentError => e
         warn "Failed to estimate next cycle phase: #{e.class}"
@@ -43,7 +43,7 @@ module MoonPhaseTracker
 
       def determine_estimated_time(reference_phase)
         return reference_phase.time.strftime("%H:%M") if reference_phase.time
-        
+
         DEFAULT_TIME
       end
     end

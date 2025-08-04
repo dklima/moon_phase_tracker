@@ -106,13 +106,13 @@ RSpec.describe MoonPhaseTracker::PhaseCalculator do
 
   describe 'phase symbols' do
     it 'has symbols for all 8 phases', :aggregate_failures do
-      expect(MoonPhaseTracker::Phase::PHASE_SYMBOLS).to include(
+      expect(MoonPhaseTracker::Phase::Mapper::PHASE_SYMBOLS).to include(
         :new_moon, :waxing_crescent, :first_quarter, :waxing_gibbous,
         :full_moon, :waning_gibbous, :last_quarter, :waning_crescent
       )
 
       # All symbols should be moon emojis
-      MoonPhaseTracker::Phase::PHASE_SYMBOLS.each_value do |symbol|
+      MoonPhaseTracker::Phase::Mapper::PHASE_SYMBOLS.each_value do |symbol|
         expect(symbol).to match(/🌑|🌒|🌓|🌔|🌕|🌖|🌗|🌘/)
       end
     end

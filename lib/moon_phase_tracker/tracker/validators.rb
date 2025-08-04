@@ -2,7 +2,6 @@
 
 module MoonPhaseTracker
   module Validators
-
     private
 
     def validate_year!(year)

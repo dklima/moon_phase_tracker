@@ -30,7 +30,7 @@ module MoonPhaseTracker
       def interpolation_possible?(phase1, phase2)
         return false unless valid_phases?(phase1, phase2)
         return false unless valid_dates?(phase1, phase2)
-        
+
         interval_within_limits?(phase1, phase2)
       end
 
@@ -52,7 +52,7 @@ module MoonPhaseTracker
       end
 
       def find_intermediate_config(type1, type2)
-        INTERMEDIATE_PHASES.find { |config| config[:between] == [type1, type2] }
+        INTERMEDIATE_PHASES.find { |config| config[:between] == [ type1, type2 ] }
       end
 
       def create_intermediate_phase(phase1, phase2, config)
@@ -69,7 +69,7 @@ module MoonPhaseTracker
       def calculate_intermediate_datetime(phase1, phase2, config)
         total_hours = calculate_total_hours_between(phase1, phase2)
         intermediate_hours = total_hours * config[:offset_ratio]
-        
+
         base_time = determine_base_time(phase1)
         base_time + (intermediate_hours * SECONDS_PER_HOUR)
       end
@@ -77,9 +77,9 @@ module MoonPhaseTracker
       def calculate_total_hours_between(phase1, phase2)
         days_between = calculate_days_between(phase1.date, phase2.date)
         hours_from_days = days_between * HOURS_PER_DAY
-        
+
         return hours_from_days unless both_phases_have_time?(phase1, phase2)
-        
+
         time_difference_hours = calculate_time_difference_hours(phase1.time, phase2.time)
         hours_from_days + time_difference_hours
       end
@@ -94,7 +94,7 @@ module MoonPhaseTracker
 
       def determine_base_time(phase)
         return phase.time if phase.time
-        
+
         Time.new(phase.date.year, phase.date.month, phase.date.day,
                  DEFAULT_HOUR, 0, 0, "+00:00")
       end
