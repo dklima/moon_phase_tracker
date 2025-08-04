@@ -1,58 +1,58 @@
 # frozen_string_literal: true
 
-require 'date'
-require 'time'
+require "date"
+require "time"
 
 module MoonPhaseTracker
   class Phase
     include Comparable
     PHASE_NAMES = {
-      'New Moon' => :new_moon,
-      'First Quarter' => :first_quarter,
-      'Full Moon' => :full_moon,
-      'Last Quarter' => :last_quarter,
+      "New Moon" => :new_moon,
+      "First Quarter" => :first_quarter,
+      "Full Moon" => :full_moon,
+      "Last Quarter" => :last_quarter,
       # Interpolated phases
-      'Waxing Crescent' => :waxing_crescent,
-      'Waxing Gibbous' => :waxing_gibbous,
-      'Waning Gibbous' => :waning_gibbous,
-      'Waning Crescent' => :waning_crescent
+      "Waxing Crescent" => :waxing_crescent,
+      "Waxing Gibbous" => :waxing_gibbous,
+      "Waning Gibbous" => :waning_gibbous,
+      "Waning Crescent" => :waning_crescent
     }.freeze
 
     PHASE_SYMBOLS = {
-      new_moon: '🌑',
-      waxing_crescent: '🌒',
-      first_quarter: '🌓',
-      waxing_gibbous: '🌔',
-      full_moon: '🌕',
-      waning_gibbous: '🌖',
-      last_quarter: '🌗',
-      waning_crescent: '🌘'
+      new_moon: "🌑",
+      waxing_crescent: "🌒",
+      first_quarter: "🌓",
+      waxing_gibbous: "🌔",
+      full_moon: "🌕",
+      waning_gibbous: "🌖",
+      last_quarter: "🌗",
+      waning_crescent: "🌘"
     }.freeze
 
     attr_reader :name, :date, :time, :phase_type, :interpolated
 
     def initialize(phase_data, interpolated: false)
-      @name = phase_data['phase']
+      @name = phase_data["phase"]
       @phase_type = PHASE_NAMES[@name] || :unknown
       @date = build_date(phase_data)
-      @time = parse_time(phase_data['time'])
+      @time = parse_time(phase_data["time"])
       @interpolated = interpolated
     end
 
     def formatted_date
-      return 'Invalid date' unless @date
+      return "Invalid date" unless @date
 
-      @date.strftime('%Y-%m-%d')
+      @date.strftime("%Y-%m-%d")
     end
 
     def formatted_time
-      return 'Invalid time' unless @time
+      return "Invalid time" unless @time
 
-      @time.strftime('%H:%M')
+      @time.strftime("%H:%M")
     end
 
     def symbol
-      PHASE_SYMBOLS[@phase_type] || '🌘'
+      PHASE_SYMBOLS[@phase_type] || "🌘"
     end
 
     def to_s
@@ -97,9 +97,9 @@ module MoonPhaseTracker
     private
 
     def build_date(phase_data)
-      year = phase_data['year']
-      month = phase_data['month']
-      day = phase_data['day']
+      year = phase_data["year"]
+      month = phase_data["month"]
+      day = phase_data["day"]
 
       return nil unless year && month && day
 

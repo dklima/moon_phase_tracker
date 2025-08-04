@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require 'net/http'
-require 'json'
-require 'uri'
+require "net/http"
+require "json"
+require "uri"
 
 module MoonPhaseTracker
   class Client
-    BASE_URL = 'https://aa.usno.navy.mil/api/moon/phases'
+    BASE_URL = "https://aa.usno.navy.mil/api/moon/phases"
     TIMEOUT = 10
 
     def initialize
@@ -56,10 +56,10 @@ module MoonPhaseTracker
     end
 
     def fetch_with_timeout(uri)
-      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https',
+      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https",
                                           open_timeout: TIMEOUT, read_timeout: TIMEOUT) do |http|
         request = Net::HTTP::Get.new(uri)
-        request['User-Agent'] = "MoonPhaseTracker/#{MoonPhaseTracker::VERSION}"
+        request["User-Agent"] = "MoonPhaseTracker/#{MoonPhaseTracker::VERSION}"
 
         response = http.request(request)
 
@@ -74,7 +74,7 @@ module MoonPhaseTracker
     def parse_response(response)
       data = JSON.parse(response.body)
 
-      raise APIError, "API error: #{data['error']}" if data['error']
+      raise APIError, "API error: #{data['error']}" if data["error"]
 
       data
     end
@@ -82,13 +82,13 @@ module MoonPhaseTracker
     def validate_date_format!(date)
       return if date.match?(/^\d{4}-\d{1,2}-\d{1,2}$/)
 
-      raise InvalidDateError, 'Date must be in YYYY-MM-DD format'
+      raise InvalidDateError, "Date must be in YYYY-MM-DD format"
     end
 
     def validate_num_phases!(num_phases)
       return if num_phases.is_a?(Integer) && num_phases.between?(1, 99)
 
-      raise InvalidDateError, 'Number of phases must be between 1 and 99'
+      raise InvalidDateError, "Number of phases must be between 1 and 99"
     end
 
     def validate_year!(year)

@@ -5,8 +5,8 @@ require_relative 'lib/moon_phase_tracker/version'
 Gem::Specification.new do |spec|
   spec.name = 'moon_phase_tracker'
   spec.version = MoonPhaseTracker::VERSION
-  spec.authors = ['Daniel K Lima']
-  spec.email = ['dklima@gmail.com']
+  spec.authors = [ 'Daniel K Lima' ]
+  spec.email = [ 'dklima@gmail.com' ]
 
   spec.summary = 'Moon phase tracker using USNO Navy API'
   spec.description = 'A Ruby gem to track moon phases using the US Naval Observatory API. Shows moon phases for specific dates, months, or years for lunar calendar scheduling.'
@@ -30,7 +30,7 @@ Gem::Specification.new do |spec|
   end
   spec.bindir = 'exe'
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
-  spec.require_paths = ['lib']
+  spec.require_paths = [ 'lib' ]
 
   # Dependencies for HTTP requests and JSON parsing
   spec.add_dependency 'json', '~> 2.7'

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'date'
+require "date"
 
 module MoonPhaseTracker
   # Calculates intermediate moon phases between major phases
@@ -13,10 +13,10 @@ module MoonPhaseTracker
 
     # Intermediate phase names and their position relative to major phases
     INTERMEDIATE_PHASES = [
-      { name: 'Waxing Crescent', offset_ratio: 0.5, between: %i[new_moon first_quarter] },
-      { name: 'Waxing Gibbous', offset_ratio: 0.5, between: %i[first_quarter full_moon] },
-      { name: 'Waning Gibbous', offset_ratio: 0.5, between: %i[full_moon last_quarter] },
-      { name: 'Waning Crescent', offset_ratio: 0.5, between: %i[last_quarter new_moon] }
+      { name: "Waxing Crescent", offset_ratio: 0.5, between: %i[new_moon first_quarter] },
+      { name: "Waxing Gibbous", offset_ratio: 0.5, between: %i[first_quarter full_moon] },
+      { name: "Waning Gibbous", offset_ratio: 0.5, between: %i[full_moon last_quarter] },
+      { name: "Waning Crescent", offset_ratio: 0.5, between: %i[last_quarter new_moon] }
     ].freeze
 
     def initialize(major_phases)
@@ -67,18 +67,18 @@ module MoonPhaseTracker
       intermediate_hours = hours_between * intermediate_config[:offset_ratio]
       intermediate_datetime = if phase1.time
                                 phase1.time + (intermediate_hours * 3600)
-                              else
+      else
                                 Time.new(phase1.date.year, phase1.date.month, phase1.date.day, 12, 0, 0,
-                                         '+00:00') + (intermediate_hours * 3600)
-                              end
+                                         "+00:00") + (intermediate_hours * 3600)
+      end
 
       # Create phase data structure
       phase_data = {
-        'phase' => intermediate_config[:name],
-        'year' => intermediate_datetime.year,
-        'month' => intermediate_datetime.month,
-        'day' => intermediate_datetime.day,
-        'time' => intermediate_datetime.strftime('%H:%M')
+        "phase" => intermediate_config[:name],
+        "year" => intermediate_datetime.year,
+        "month" => intermediate_datetime.month,
+        "day" => intermediate_datetime.day,
+        "time" => intermediate_datetime.strftime("%H:%M")
       }
 
       Phase.new(phase_data, interpolated: true)
@@ -98,7 +98,7 @@ module MoonPhaseTracker
 
     def find_intermediate_config(type1, type2)
       INTERMEDIATE_PHASES.find do |config|
-        config[:between] == [type1, type2]
+        config[:between] == [ type1, type2 ]
       end
     end
 
@@ -112,11 +112,11 @@ module MoonPhaseTracker
 
       # Create an estimated new moon phase for calculation purposes
       phase_data = {
-        'phase' => 'New Moon',
-        'year' => estimated_next_new_moon_date.year,
-        'month' => estimated_next_new_moon_date.month,
-        'day' => estimated_next_new_moon_date.day,
-        'time' => last_phase.time ? last_phase.time.strftime('%H:%M') : '12:00'
+        "phase" => "New Moon",
+        "year" => estimated_next_new_moon_date.year,
+        "month" => estimated_next_new_moon_date.month,
+        "day" => estimated_next_new_moon_date.day,
+        "time" => last_phase.time ? last_phase.time.strftime("%H:%M") : "12:00"
       }
 
       Phase.new(phase_data)

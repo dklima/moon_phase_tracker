@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'date'
+require "date"
 
 module MoonPhaseTracker
   class Tracker
@@ -26,7 +26,7 @@ module MoonPhaseTracker
       date_obj = parse_date(date)
       validate_num_phases!(num_phases)
 
-      formatted_date = date_obj.strftime('%Y-%m-%d')
+      formatted_date = date_obj.strftime("%Y-%m-%d")
       response = @client.phases_from_date(formatted_date, num_phases)
       parse_phases(response)
     end
@@ -70,25 +70,25 @@ module MoonPhaseTracker
     end
 
     def format_phases(phases, title = nil)
-      return 'No phases found.' if phases.empty?
+      return "No phases found." if phases.empty?
 
       output = []
       output << title if title
-      output << '=' * title.length if title
-      output << ''
+      output << "=" * title.length if title
+      output << ""
 
       phases.each do |phase|
-        prefix = phase.interpolated ? '~' : ' '
+        prefix = phase.interpolated ? "~" : " "
         output << "#{prefix}#{phase}"
       end
 
-      output << ''
+      output << ""
       major_count = phases.count { |p| !p.interpolated }
       interpolated_count = phases.count(&:interpolated)
 
       if interpolated_count.positive?
         output << "Total: #{phases.size} phase(s) (#{major_count} major, #{interpolated_count} interpolated)"
-        output << '~ indicates interpolated phases'
+        output << "~ indicates interpolated phases"
       else
         output << "Total: #{phases.size} phase(s)"
       end
@@ -108,9 +108,9 @@ module MoonPhaseTracker
     private
 
     def parse_phases(response)
-      return [] unless response && response['phasedata']
+      return [] unless response && response["phasedata"]
 
-      phases = response['phasedata'].map { |phase_data| Phase.new(phase_data) }
+      phases = response["phasedata"].map { |phase_data| Phase.new(phase_data) }
       phases.sort
     end
 
@@ -123,7 +123,7 @@ module MoonPhaseTracker
       when Time
         date.to_date
       else
-        raise InvalidDateError, 'Invalid date format'
+        raise InvalidDateError, "Invalid date format"
       end
     rescue Date::Error
       raise InvalidDateError, "Invalid date: #{date}"
@@ -142,13 +142,13 @@ module MoonPhaseTracker
 
       return if month.is_a?(Integer) && month.between?(1, 12)
 
-      raise InvalidDateError, 'Month must be between 1 and 12'
+      raise InvalidDateError, "Month must be between 1 and 12"
     end
 
     def validate_num_phases!(num_phases)
       return if num_phases.is_a?(Integer) && num_phases.between?(1, 99)
 
-      raise InvalidDateError, 'Number of phases must be between 1 and 99'
+      raise InvalidDateError, "Number of phases must be between 1 and 99"
     end
   end
 end
