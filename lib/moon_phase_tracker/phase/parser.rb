@@ -18,10 +18,15 @@ module MoonPhaseTracker
         nil
       end
 
-      def self.parse_time(time_string)
+      def self.parse_time(time_string, date = nil)
         return nil unless time_string
 
-        Time.parse("#{time_string} UTC")
+        if date
+          hour, minute = time_string.split(":").map(&:to_i)
+          Time.utc(date.year, date.month, date.day, hour, minute)
+        else
+          Time.parse("#{time_string} UTC")
+        end
       rescue ArgumentError
         nil
       end

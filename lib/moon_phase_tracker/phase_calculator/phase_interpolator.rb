@@ -60,7 +60,7 @@ module MoonPhaseTracker
         return nil unless intermediate_datetime
 
         phase_data = build_phase_data(intermediate_datetime, config[:name])
-        Phase.new(phase_data, interpolated: true)
+        Phase.new(phase_data, interpolated: true, source: :interpolated)
       rescue Date::Error, ArgumentError => e
         warn "Failed to create intermediate phase: #{e.class}"
         nil

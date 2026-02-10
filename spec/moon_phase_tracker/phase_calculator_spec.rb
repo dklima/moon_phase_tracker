@@ -62,6 +62,7 @@ RSpec.describe MoonPhaseTracker::PhaseCalculator do
 
       interpolated_phases.each do |phase|
         expect(phase.interpolated).to be true
+        expect(phase.source).to eq(:interpolated)
         expect(phase.name).to be_a(String)
         expect(phase.phase_type).to be_a(Symbol)
         expect(phase.date).to be_a(Date)
