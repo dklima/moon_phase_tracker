@@ -96,6 +96,38 @@ all_year_phases = MoonPhaseTracker.all_phases_for_year(2025)
 extended_phases = MoonPhaseTracker.all_phases_from_date("2025-08-01", 2)
 ```
 
+#### Filtering Intermediate Phases
+
+To extract only the 4 calculated intermediate phases from a month:
+
+```ruby
+require 'moon_phase_tracker'
+
+begin
+  all_phases = MoonPhaseTracker.all_phases_for_month(2025, 8)
+rescue MoonPhaseTracker::NetworkError, MoonPhaseTracker::APIError => e
+  puts "API unavailable: #{e.message}"
+  all_phases = []
+end
+
+interpolated = all_phases.select(&:interpolated)
+
+interpolated.each do |phase|
+  puts "#{phase.symbol} #{phase.name} — #{phase.formatted_date} (source: #{phase.source})"
+end
+# => 🌒 Waxing Crescent — 2025-08-08 (source: interpolated)
+# => 🌔 Waxing Gibbous — 2025-08-15 (source: interpolated)
+# => 🌖 Waning Gibbous — 2025-08-22 (source: interpolated)
+# => 🌘 Waning Crescent — 2025-08-29 (source: interpolated)
+```
+
+**Edge cases to handle:**
+- A month at the boundary of the USNO data range may return fewer than 4 major phases, which means fewer interpolated phases (or none)
+- `all_phases_for_month` can return between 4 and 8 phases depending on how many intermediate phases fall within the calendar month
+- The `interpolated` attribute is always `false` for API phases and `true` for calculated intermediates — there's no ambiguous state
+
+**Dependencies:** The gem requires Ruby >= 3.2.0. Install via `gem install moon_phase_tracker` or add `gem 'moon_phase_tracker'` to your Gemfile. No external services needed for `LunarCalculator` methods; only the `phases_for_*` and `all_phases_for_*` methods require network access to the USNO API.
+
 ### 🔮 Instant Moon Phase - No API, No Waiting
 
 *What phase is the moon right now? How bright is it? Pure math, instant answer.*
@@ -205,17 +237,46 @@ phase.in_year?(2025)      # => true (definitely a 2025 vintage)
 
 *Even celestial bodies have bad days. Here's how to handle lunar tantrums gracefully.*
 
+All errors inherit from `MoonPhaseTracker::Error`, so you can rescue broadly or specifically:
+
+| Error Class | Raised When | Example Trigger |
+|-------------|-------------|-----------------|
+| `NetworkError` | Connection timeout, DNS failure, socket error | USNO API is down, no internet |
+| `APIError` | Non-200 response or invalid JSON from the API | 500 server error, malformed response |
+| `InvalidDateError` | Input validation fails before any API call | Month 13, year 1500, unparseable string |
+
 ```ruby
 begin
   phases = MoonPhaseTracker.phases_for_month(2025, 8)
 rescue MoonPhaseTracker::NetworkError => e
-  puts "Network hiccup: #{e.message}" # The internet is having a moment
+  puts "Network hiccup: #{e.message}"
 rescue MoonPhaseTracker::APIError => e
-  puts "API tantrum: #{e.message}"   # The Navy API is feeling moody
+  puts "API tantrum: #{e.message}"
 rescue MoonPhaseTracker::InvalidDateError => e
-  puts "Time travel error: #{e.message}" # That date doesn't exist in this dimension
+  puts "Time travel error: #{e.message}"
 end
 ```
+
+Since `LunarCalculator` is pure math (no network), it makes a natural fallback when the API is unavailable:
+
+```ruby
+def moon_phases_for(year, month)
+  MoonPhaseTracker.all_phases_for_month(year, month)
+rescue MoonPhaseTracker::NetworkError, MoonPhaseTracker::APIError
+  # API down — generate approximate phases from the calculator
+  first_day = Date.new(year, month, 1)
+  last_day = first_day.next_month - 1
+  calculator = MoonPhaseTracker::LunarCalculator.new
+
+  (first_day..last_day).each_with_object([]) do |date, phases|
+    phase = calculator.phase_at(date)
+    prev = phases.last
+    phases << phase if prev.nil? || prev.name != phase.name
+  end
+end
+```
+
+The fallback returns one Phase per named transition in the month. The `source` field will be `:calculated` instead of `:api`, so downstream code can distinguish degraded results.
 
 ### 🎪 Real-World Lunar Magic
 
@@ -330,6 +391,174 @@ phase.source        # => :calculated
 phase.illumination  # => 65.3 (percent)
 phase.lunar_age     # => 10.2 (days since last new moon)
 ```
+
+### 🔬 Accuracy & Validation
+
+#### Interpolated Phases — Known Limitations
+
+The 4 intermediate phases (Waxing Crescent, Waxing Gibbous, Waning Gibbous, Waning Crescent) are **not** from the USNO API. They're calculated by splitting the time interval between two consecutive major phases in half.
+
+This approach assumes **uniform phase spacing** within each quarter of the lunar cycle. In reality, the Moon's orbit is elliptical — it moves faster at perigee and slower at apogee. The practical consequences:
+
+| Limitation | Impact | Magnitude |
+|------------|--------|-----------|
+| Phase timing error | Interpolated dates can drift from true astronomical timing | Up to ~12 hours |
+| Illumination gap | The calculator's cosine model smooths over orbital eccentricity | ~2-5% near quarter phases |
+| Boundary misclassification | Near phase transitions, the named phase may differ from USNO | Within ~6 hours of boundaries |
+| No libration modeling | The synodic model ignores lunar libration and perturbations | Negligible for phase naming |
+
+**For precision-critical applications** (astronomical scheduling, scientific observations, tidal calculations), always use the `:api` source phases. The interpolated and calculated paths are designed for **display and UX** — calendars, widgets, badges, content scheduling.
+
+#### Calculator (Synodic Model) — What It Can and Can't Do
+
+The `LunarCalculator` uses a fixed synodic month of 29.530588853 days anchored to a known New Moon epoch (January 6, 2000, 18:14 UTC). It gives you:
+
+- **Correct named phase ~99% of the time** — the 8 phase boundaries divide the cycle into equal 1/8th arcs
+- **Illumination via cosine curve** — `(1 - cos(2π × fraction)) / 2` approximates the visual illumination percentage
+- **Instant results for any date from 1800 to 2100** — no network, no rate limits
+
+What it doesn't model: orbital eccentricity, solar perturbations, atmospheric refraction, or the equation of time. These factors accumulate over centuries, so dates far from the epoch will drift more.
+
+#### Validating Against USNO Data
+
+You can cross-check any calculated phase against the authoritative API data:
+
+```ruby
+require 'moon_phase_tracker'
+
+date = Date.new(2025, 8, 19)
+
+# Calculator path (instant, approximate)
+calc = MoonPhaseTracker.phase_at(date)
+
+# API path (network call, authoritative)
+api_phases = MoonPhaseTracker.phases_for_month(2025, 8)
+api = api_phases.find { |p| p.date == date }
+
+if api
+  puts "Calculator: #{calc.name} (#{calc.illumination.round(1)}%)"
+  puts "USNO API:   #{api.name}"
+  puts "Phase match: #{calc.name == api.name}"
+  puts "Date delta:  #{(calc.date - api.date).to_i} days"
+end
+```
+
+For systematic validation, compare an entire year's calculated phases against API data:
+
+```ruby
+tracker = MoonPhaseTracker::Tracker.new
+api_phases = tracker.phases_for_year(2025)
+calculator = MoonPhaseTracker::LunarCalculator.new
+
+mismatches = api_phases.count do |api_phase|
+  calc_phase = calculator.phase_at(api_phase.date)
+  calc_phase.name != api_phase.name
+end
+
+accuracy = ((api_phases.size - mismatches).to_f / api_phases.size * 100).round(1)
+puts "#{accuracy}% phase name accuracy (#{mismatches}/#{api_phases.size} mismatches)"
+```
+
+### 📦 Multi-Year Queries, Caching, and Rate Limits
+
+#### What the Gem Caches (and What It Doesn't)
+
+The `Client` has one internal cache: `@uri_cache`, keyed by endpoint + params. It caches **parsed URI objects**, not API responses. Calling `phases_for_year(2025)` twice on the same `Tracker` instance reuses the parsed URI but makes two network requests.
+
+The gem has **no built-in response cache**. This is intentional — caching strategy depends on your application (Redis, Memcached, database, in-memory), so it belongs in your layer.
+
+#### Avoiding Redundant API Calls for the Same Month
+
+`phases_for_month(year, month)` internally calls `phases_for_year(year)` and filters by month. This means querying January, February, and March of 2025 makes **three identical API calls** to the same year endpoint:
+
+```ruby
+tracker = MoonPhaseTracker::Tracker.new
+
+# BAD: 3 API calls for the same year
+jan = tracker.phases_for_month(2025, 1)
+feb = tracker.phases_for_month(2025, 2)
+mar = tracker.phases_for_month(2025, 3)
+```
+
+Fetch the year once and filter locally:
+
+```ruby
+tracker = MoonPhaseTracker::Tracker.new
+
+# GOOD: 1 API call, filter in Ruby
+all_2025 = tracker.phases_for_year(2025)
+jan = all_2025.select { |p| p.in_month?(2025, 1) }
+feb = all_2025.select { |p| p.in_month?(2025, 2) }
+mar = all_2025.select { |p| p.in_month?(2025, 3) }
+```
+
+The same applies to `all_phases_for_month` — use `all_phases_for_year` once and filter.
+
+#### Rate Limiter Scope
+
+The rate limiter is **per-Tracker instance**. Each `Tracker.new` creates its own `Client` with its own token bucket. Multiple trackers (e.g. one per background worker) each enforce their own rate limit independently.
+
+#### Multi-Year Strategy
+
+The USNO API returns all phases for a given year in a single response (~50 phases per year). Querying 10 years means 10 API calls, not 120 month-by-month calls. Use `phases_for_year` as the batch unit:
+
+```ruby
+# Efficient: 1 API call per year, rate limiter spaces them automatically
+tracker = MoonPhaseTracker::Tracker.new
+
+phases_by_year = (2020..2030).each_with_object({}) do |year, acc|
+  acc[year] = tracker.all_phases_for_year(year)
+end
+
+# 11 API calls total, ~11 seconds at default rate (1 req/sec)
+# Each year returns ~50 phases (major) or ~100 phases (all 8)
+```
+
+For faster bulk loading, increase the rate limit:
+
+```ruby
+fast_limiter = MoonPhaseTracker::RateLimiter.new(
+  requests_per_second: 3.0,
+  burst_size: 3
+)
+tracker = MoonPhaseTracker::Tracker.new(rate_limiter: fast_limiter)
+
+# Same 11 calls, now ~4 seconds
+(2020..2030).each { |year| tracker.phases_for_year(year) }
+```
+
+#### Adding a Response Cache
+
+Lunar data is static per year, so a long TTL works well. A pattern with Rails:
+
+```ruby
+class LunarDataService
+  def phases_for_year(year)
+    Rails.cache.fetch("lunar_phases/#{year}", expires_in: 30.days) do
+      MoonPhaseTracker.all_phases_for_year(year).map(&:to_h)
+    end
+  end
+
+  def phases_for_range(start_year, end_year)
+    (start_year..end_year).flat_map { |year| phases_for_year(year) }
+  end
+end
+```
+
+This gives you: one API call per year, cached for 30 days, rate-limited automatically. The `to_h` serialization ensures the cache stores plain hashes (safe for any cache backend).
+
+#### Combining API and Calculator for Multi-Year Systems
+
+For applications that span multiple years, the recommended architecture:
+
+| Time Range | Source | Why |
+|------------|--------|-----|
+| Historical data (past years) | API, cached in database | Exact dates, fetch once, query forever |
+| Current year | API, cached with shorter TTL | Re-fetch quarterly to catch USNO updates |
+| Real-time display | `LunarCalculator` | No network, no cache, instant |
+| Far future (> 10 years out) | `LunarCalculator` | USNO API range is limited |
+
+The database-backed approach from the [Hybrid Architecture](#hybrid-architecture-usno-for-scheduling-calculator-for-display) example works across years — run the sync job once per year for each new year, and the `lunar_phases` table grows by ~100 rows annually.
 
 ## ⚓ Our Trusted Cosmic Oracle
 
