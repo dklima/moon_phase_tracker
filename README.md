@@ -96,6 +96,40 @@ all_year_phases = MoonPhaseTracker.all_phases_for_year(2025)
 extended_phases = MoonPhaseTracker.all_phases_from_date("2025-08-01", 2)
 ```
 
+### 🔮 Instant Moon Phase - No API, No Waiting
+
+*What phase is the moon right now? How bright is it? Pure math, instant answer.*
+
+These methods use a synodic month calculation — no API calls, no network, no rate limits. Perfect for display UIs and real-time widgets.
+
+```ruby
+require 'moon_phase_tracker'
+
+# What's the moon doing right now?
+phase = MoonPhaseTracker.current_phase
+puts phase.to_s
+# => "🌔 Waxing Gibbous - 2025-08-15 at 14:30"
+puts phase.illumination  # => 78.5 (percent)
+puts phase.lunar_age     # => 12.3 (days since last new moon)
+puts phase.source        # => :calculated
+
+# Phase at any date/time - past or future
+phase = MoonPhaseTracker.phase_at(Time.utc(2025, 6, 11, 7, 44))
+puts phase.name          # => "Full Moon"
+puts phase.illumination  # => ~100.0
+
+# Just the illumination percentage
+illum = MoonPhaseTracker.illumination(Date.today)
+puts "#{illum.round(1)}% illuminated"
+
+# Works with Date, Time, DateTime, or String
+MoonPhaseTracker.phase_at(Date.new(2025, 1, 15))
+MoonPhaseTracker.phase_at("2025-01-15")
+MoonPhaseTracker.phase_at(DateTime.now)
+```
+
+> **Accuracy note:** The synodic model gives the correct named phase ~99% of the time. Within ~6 hours of a phase boundary, it may differ from USNO API data. The API path gives precision for scheduling; the calculator path gives instant answers for display.
+
 ### 🎯 The Tracker Class - Your Personal Lunar Assistant
 
 *Think of it as your moon phase butler, always ready to serve up cosmic timing with a bow tie.*
@@ -114,6 +148,16 @@ puts next_phase.to_s
 
 # Current month phases - what's happening in your lunar neighborhood
 current_month = tracker.current_month_phases
+
+# Instant phase at any date - no API call needed
+phase = tracker.phase_at("2025-06-11")
+puts phase.illumination  # => Float (percent)
+
+# Just the illumination number
+illum = tracker.illumination("2025-06-11")
+
+# Current phase right now
+puts tracker.current_phase
 ```
 
 ### 🔍 Getting Personal with Moon Phases
@@ -146,7 +190,10 @@ details = phase.to_h
 #   symbol: "🌑",
 #   iso_date: "2025-08-04",
 #   utc_time: "2025-08-04T11:13:00Z",
-#   interpolated: false
+#   interpolated: false,
+#   source: :api,           # :api, :interpolated, or :calculated
+#   illumination: nil,      # Float for calculated phases, nil for API
+#   lunar_age: nil          # Float for calculated phases, nil for API
 # }
 
 # Date checks - lunar detective work
@@ -174,7 +221,52 @@ end
 
 *Because theory is nice, but seeing the moon phases in action is where the real magic happens.*
 
-See the `examples/usage_example.rb` and `examples/eight_phases_example.rb` files for complete usage examples.
+#### Hybrid Architecture: USNO for Scheduling, Calculator for Display
+
+The API gives you exact dates. The calculator gives you instant answers. Use both — a background job populates a `lunar_phases` table with USNO data, and `LunarCalculator` handles the real-time display layer.
+
+```ruby
+# app/jobs/sync_lunar_phases_job.rb
+class SyncLunarPhasesJob < ApplicationJob
+  def perform(year = Date.current.year)
+    phases = MoonPhaseTracker.all_phases_for_year(year)
+
+    phases.each do |phase|
+      LunarPhase.upsert(
+        {
+          name: phase.name,
+          phase_type: phase.phase_type.to_s,
+          exact_at: phase.to_h[:utc_time],
+          source: phase.source.to_s
+        },
+        unique_by: :exact_at
+      )
+    end
+  end
+end
+```
+
+```ruby
+# app/models/lunar_phase.rb
+class LunarPhase < ApplicationRecord
+  scope :upcoming, -> { where("exact_at > ?", Time.current).order(:exact_at) }
+  scope :next_full_moon, -> { upcoming.where(phase_type: "full_moon").first }
+end
+```
+
+```ruby
+# app/helpers/moon_helper.rb
+module MoonHelper
+  def moon_badge(date = Date.current)
+    phase = MoonPhaseTracker.phase_at(date)
+    "#{phase.symbol} #{phase.illumination.round}%"
+  end
+end
+```
+
+Two data sources, each doing what they do best. The table owns scheduling precision (notifications, rituals, content triggers). The calculator owns display (emoji, illumination percentage, "what phase is it right now?"). They never step on each other's toes.
+
+See the `examples/usage_example.rb` and `examples/eight_phases_example.rb` files for more usage examples.
 
 ## 📚 The Lunar Grimoire - Complete API Spellbook
 
@@ -187,6 +279,16 @@ See the `examples/usage_example.rb` and `examples/eight_phases_example.rb` files
 - `MoonPhaseTracker.phases_for_month(year, month)` - Major phases for a specific month
 - `MoonPhaseTracker.phases_for_year(year)` - All major phases for a year
 - `MoonPhaseTracker.phases_from_date(date, num_phases)` - Major phases from a specific date
+
+### 🔮 Instant Lookup - No API Required
+
+*Pure math, zero latency. For when you need the moon right now.*
+
+- `MoonPhaseTracker.phase_at(date)` - Phase at any date/time (returns `Phase` with illumination)
+- `MoonPhaseTracker.illumination(date)` - Illumination percentage (returns `Float` 0..100)
+- `MoonPhaseTracker.current_phase` - Phase right now (shortcut for `phase_at(Time.now.utc)`)
+
+No API calls — pure math under the hood.
 
 ### 🌈 The Full Spectrum - 8-Phase Methods for Lunar Completionists
 
@@ -211,6 +313,23 @@ See the `examples/usage_example.rb` and `examples/eight_phases_example.rb` files
 - 🌔 `:waxing_gibbous` - Waxing Gibbous *(Almost there, building anticipation)*
 - 🌖 `:waning_gibbous` - Waning Gibbous *(The wise elder, still radiant)*
 - 🌘 `:waning_crescent` - Waning Crescent *(The gentle farewell)*
+
+### 🏷️ Phase Sources - Know Where Your Data Comes From
+
+*Every phase carries a passport stamped with its origin story.*
+
+| Source | Meaning | When |
+|--------|---------|------|
+| `:api` | Official USNO data | `phases_for_month`, `phases_for_year`, etc. |
+| `:interpolated` | Calculated between two API phases | `all_phases_for_month`, `all_phases_for_year`, etc. |
+| `:calculated` | Pure synodic math model | `phase_at`, `illumination`, `current_phase` |
+
+```ruby
+phase = MoonPhaseTracker.phase_at(Date.today)
+phase.source        # => :calculated
+phase.illumination  # => 65.3 (percent)
+phase.lunar_age     # => 10.2 (days since last new moon)
+```
 
 ## ⚓ Our Trusted Cosmic Oracle
 
