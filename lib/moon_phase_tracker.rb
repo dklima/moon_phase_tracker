@@ -5,6 +5,7 @@ require_relative "moon_phase_tracker/rate_limiter"
 require_relative "moon_phase_tracker/client"
 require_relative "moon_phase_tracker/phase"
 require_relative "moon_phase_tracker/phase_calculator"
+require_relative "moon_phase_tracker/lunar_calculator"
 require_relative "moon_phase_tracker/tracker"
 
 module MoonPhaseTracker
@@ -38,5 +39,21 @@ module MoonPhaseTracker
   # Get all 8 phases from a specific date
   def self.all_phases_from_date(date, num_cycles = 3)
     Tracker.new.all_phases_from_date(date, num_cycles)
+  end
+
+  def self.calculator
+    @calculator ||= LunarCalculator.new
+  end
+
+  def self.phase_at(date)
+    calculator.phase_at(date)
+  end
+
+  def self.illumination(date)
+    calculator.illumination(date)
+  end
+
+  def self.current_phase
+    calculator.phase_at(Time.now.utc)
   end
 end

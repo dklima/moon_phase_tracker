@@ -43,6 +43,20 @@ module MoonPhaseTracker
       phases_from_date(Date.today, 1).first
     end
 
+    def phase_at(date)
+      parsed = @date_parser.parse(date)
+      calculator.phase_at(parsed)
+    end
+
+    def illumination(date)
+      parsed = @date_parser.parse(date)
+      calculator.illumination(parsed)
+    end
+
+    def current_phase
+      calculator.phase_at(Time.now.utc)
+    end
+
     def current_month_phases
       today = Date.today
       phases_for_month(today.year, today.month)
@@ -76,6 +90,10 @@ module MoonPhaseTracker
     end
 
     private
+
+    def calculator
+      @calculator ||= LunarCalculator.new
+    end
 
     MONTH_NAMES = %w[
       January February March April May June

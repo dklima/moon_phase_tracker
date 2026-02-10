@@ -97,6 +97,53 @@ RSpec.describe MoonPhaseTracker::Tracker do
     end
   end
 
+  describe '#phase_at' do
+    it 'returns a calculated Phase for a given date', :aggregate_failures do
+      phase = tracker.phase_at("2025-06-11")
+
+      expect(phase).to be_a(MoonPhaseTracker::Phase)
+      expect(phase.source).to eq(:calculated)
+      expect(phase.illumination).to be_a(Float)
+      expect(phase.lunar_age).to be_a(Float)
+    end
+
+    it 'accepts Date objects' do
+      phase = tracker.phase_at(Date.new(2025, 1, 15))
+
+      expect(phase).to be_a(MoonPhaseTracker::Phase)
+    end
+
+    it 'raises error for invalid date format' do
+      expect { tracker.phase_at('invalid-date') }.to raise_error(MoonPhaseTracker::InvalidDateError)
+    end
+  end
+
+  describe '#illumination' do
+    it 'returns a Float between 0 and 100' do
+      illum = tracker.illumination("2025-06-11")
+
+      expect(illum).to be_a(Float)
+      expect(illum).to be_between(0, 100)
+    end
+
+    it 'raises error for invalid date format' do
+      expect { tracker.illumination('invalid-date') }.to raise_error(MoonPhaseTracker::InvalidDateError)
+    end
+  end
+
+  describe '#current_phase' do
+    it 'returns a calculated Phase for the current time', :aggregate_failures do
+      frozen_time = Time.utc(2025, 1, 15, 12, 0, 0)
+      allow(Time).to receive(:now).and_return(frozen_time)
+
+      phase = tracker.current_phase
+
+      expect(phase).to be_a(MoonPhaseTracker::Phase)
+      expect(phase.source).to eq(:calculated)
+      expect(phase.illumination).to be_a(Float)
+    end
+  end
+
   describe '.month_name' do
     it 'returns correct English month names', :aggregate_failures do
       expect(described_class.month_name(1)).to eq('January')

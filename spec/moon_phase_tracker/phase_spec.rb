@@ -65,6 +65,75 @@ RSpec.describe MoonPhaseTracker::Phase do
     end
   end
 
+  describe '#time date anchoring' do
+    it 'anchors time to the phase date, not today', :aggregate_failures do
+      hash = phase.to_h
+
+      expect(hash[:utc_time]).to eq("2025-08-19T18:26:00Z")
+      expect(phase.time.year).to eq(2025)
+      expect(phase.time.month).to eq(8)
+      expect(phase.time.day).to eq(19)
+    end
+  end
+
+  describe '.from_calculation' do
+    let(:calculated_phase) do
+      described_class.from_calculation(
+        name: "Waxing Gibbous",
+        date: Date.new(2025, 6, 8),
+        time: "14:30",
+        illumination: 78.5,
+        lunar_age: 12.3
+      )
+    end
+
+    it 'creates phase with calculated attributes', :aggregate_failures do
+      expect(calculated_phase.name).to eq("Waxing Gibbous")
+      expect(calculated_phase.phase_type).to eq(:waxing_gibbous)
+      expect(calculated_phase.source).to eq(:calculated)
+      expect(calculated_phase.illumination).to eq(78.5)
+      expect(calculated_phase.lunar_age).to eq(12.3)
+    end
+
+    it 'handles edge illumination values', :aggregate_failures do
+      edge_phase = described_class.from_calculation(
+        name: "New Moon", date: Date.new(2025, 1, 6),
+        time: "18:14", illumination: 0.0, lunar_age: 0.0
+      )
+
+      expect(edge_phase.illumination).to eq(0.0)
+      expect(edge_phase.lunar_age).to eq(0.0)
+      expect(edge_phase.interpolated).to be false
+    end
+
+    it 'includes new attributes in to_h', :aggregate_failures do
+      hash = calculated_phase.to_h
+
+      expect(hash[:source]).to eq(:calculated)
+      expect(hash[:illumination]).to eq(78.5)
+      expect(hash[:lunar_age]).to eq(12.3)
+    end
+  end
+
+  describe 'backward compatibility' do
+    it 'defaults to source: :api, nil illumination and lunar_age', :aggregate_failures do
+      expect(phase.source).to eq(:api)
+      expect(phase.illumination).to be_nil
+      expect(phase.lunar_age).to be_nil
+    end
+
+    it 'includes all keys in to_h', :aggregate_failures do
+      hash = phase.to_h
+
+      expect(hash).to have_key(:source)
+      expect(hash).to have_key(:illumination)
+      expect(hash).to have_key(:lunar_age)
+      expect(hash[:source]).to eq(:api)
+      expect(hash[:illumination]).to be_nil
+      expect(hash[:lunar_age]).to be_nil
+    end
+  end
+
   describe '#in_month?' do
     it 'correctly identifies if phase is in specific month', :aggregate_failures do
       expect(phase.in_month?(2025, 8)).to be true

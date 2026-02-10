@@ -36,7 +36,10 @@ module MoonPhaseTracker
           symbol: phase_attributes[:symbol],
           iso_date: phase_attributes[:date]&.iso8601,
           utc_time: phase_attributes[:time]&.utc&.iso8601,
-          interpolated: phase_attributes[:interpolated]
+          interpolated: phase_attributes[:interpolated],
+          source: phase_attributes[:source],
+          illumination: phase_attributes[:illumination],
+          lunar_age: phase_attributes[:lunar_age]
         }
       end
     end

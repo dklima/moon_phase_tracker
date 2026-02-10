@@ -83,6 +83,38 @@ RSpec.describe MoonPhaseTracker do
     end
   end
 
+  describe '.phase_at' do
+    it 'returns a Phase for a given date', :aggregate_failures do
+      phase = MoonPhaseTracker.phase_at(Date.new(2025, 6, 8))
+
+      expect(phase).to be_a(MoonPhaseTracker::Phase)
+      expect(phase.source).to eq(:calculated)
+      expect(phase.illumination).to be_a(Float)
+      expect(phase.lunar_age).to be_a(Float)
+      expect(phase.date).to eq(Date.new(2025, 6, 8))
+    end
+  end
+
+  describe '.illumination' do
+    it 'returns a percentage between 0 and 100', :aggregate_failures do
+      illum = MoonPhaseTracker.illumination(Date.new(2025, 6, 8))
+
+      expect(illum).to be_a(Float)
+      expect(illum).to be >= 0.0
+      expect(illum).to be <= 100.0
+    end
+  end
+
+  describe '.current_phase' do
+    it 'returns a Phase for the current moment', :aggregate_failures do
+      phase = MoonPhaseTracker.current_phase
+
+      expect(phase).to be_a(MoonPhaseTracker::Phase)
+      expect(phase.source).to eq(:calculated)
+      expect(phase.date).to eq(Time.now.utc.to_date)
+    end
+  end
+
   private
 
   def sample_year_response

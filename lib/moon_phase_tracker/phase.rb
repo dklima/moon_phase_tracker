@@ -9,14 +9,29 @@ module MoonPhaseTracker
   class Phase
     include Comparable
 
-    attr_reader :name, :date, :time, :phase_type, :interpolated
+    attr_reader :name, :date, :time, :phase_type, :interpolated,
+                :source, :illumination, :lunar_age
 
-    def initialize(phase_data, interpolated: false)
+    def initialize(phase_data, interpolated: false, source: :api, illumination: nil, lunar_age: nil)
       @name = phase_data["phase"]
       @phase_type = Mapper.map_phase_type(@name)
       @date = Parser.build_date(phase_data)
-      @time = Parser.parse_time(phase_data["time"])
+      @time = Parser.parse_time(phase_data["time"], @date)
       @interpolated = interpolated
+      @source = source
+      @illumination = illumination
+      @lunar_age = lunar_age
+    end
+
+    def self.from_calculation(name:, date:, time:, illumination:, lunar_age:)
+      phase_data = {
+        "phase" => name,
+        "year" => date.year,
+        "month" => date.month,
+        "day" => date.day,
+        "time" => time
+      }
+      new(phase_data, source: :calculated, illumination: illumination, lunar_age: lunar_age)
     end
 
     def formatted_date
@@ -42,7 +57,10 @@ module MoonPhaseTracker
         date: @date,
         time: @time,
         symbol: symbol,
-        interpolated: @interpolated
+        interpolated: @interpolated,
+        source: @source,
+        illumination: @illumination,
+        lunar_age: @lunar_age
       }
 
       Formatter.build_hash_representation(phase_attributes)
